@@ -1,0 +1,425 @@
+{
+  "entities": {
+    "Client": {
+      "title": "Client",
+      "description": "A registered client workspace owned by the authenticated user, optionally configured with Client Portal credentials.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the client (1 to 80 characters)."
+        },
+        "company": {
+          "type": "string",
+          "description": "Optional company or organization label (0 to 80 characters)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional brief context or engagement notes (0 to 300 characters)."
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Hex accent color used to identify the client in app, portal, and widgets (e.g. #2555E6)."
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display ordering index for client tabs and widget cycling."
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "Whether the client is archived."
+        },
+        "portalEnabled": {
+          "type": "boolean",
+          "description": "Whether email/password Client Portal login is enabled for this client."
+        },
+        "portalEmail": {
+          "type": "string",
+          "description": "Normalized lowercase portal login email (0 to 120 characters)."
+        },
+        "portalKey": {
+          "type": "string",
+          "description": "64-character lowercase hex PBKDF2-HMAC-SHA256 derived portal access key, or empty string when disabled."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() upon creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on create and update."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "company",
+        "notes",
+        "colorHex",
+        "sortOrder",
+        "archived",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ClientProject": {
+      "title": "ClientProject",
+      "description": "A project belonging to a specific client workspace. Every client starts with a default project named after the client.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Document ID of the parent client under /users/{userId}/clients."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the project (1 to 80 characters)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional brief description or milestone summary (0 to 300 characters)."
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Hex accent color for the project (e.g. #2555E6)."
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display ordering index for project tabs and swipe paging."
+        },
+        "defaultProject": {
+          "type": "boolean",
+          "description": "Whether this is the client's default project."
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "Whether the project is archived."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() upon creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on create and update."
+        }
+      },
+      "required": [
+        "userId",
+        "clientId",
+        "name",
+        "description",
+        "colorHex",
+        "sortOrder",
+        "defaultProject",
+        "archived",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ClientTask": {
+      "title": "ClientTask",
+      "description": "An individual work task belonging to a specific client and project.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Document ID of the parent client under /users/{userId}/clients."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Document ID of the parent project under /users/{userId}/projects."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short actionable task title (1 to 140 characters)."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional task notes or deliverables (0 to 400 characters)."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["LOW", "NORMAL", "HIGH"],
+          "description": "Task urgency level."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task is marked as done."
+        },
+        "dueLabel": {
+          "type": "string",
+          "description": "Optional short target date or milestone label (0 to 40 characters)."
+        },
+        "createdByClient": {
+          "type": "boolean",
+          "description": "Whether this task was submitted by the client via the Client Portal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() upon creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on create and update."
+        }
+      },
+      "required": [
+        "userId",
+        "clientId",
+        "title",
+        "details",
+        "priority",
+        "completed",
+        "dueLabel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ClientPortal": {
+      "title": "ClientPortal",
+      "description": "Cryptographically keyed Client Portal root document (256-bit PBKDF2 derived ID). Never listable.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the workspace owner."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Document ID of the linked client."
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Display name of the client (1 to 80 characters)."
+        },
+        "clientCompany": {
+          "type": "string",
+          "description": "Optional company label (0 to 80 characters)."
+        },
+        "clientColorHex": {
+          "type": "string",
+          "description": "Hex accent color for the client portal theme."
+        },
+        "portalEmail": {
+          "type": "string",
+          "description": "Normalized lowercase portal login email (3 to 120 characters)."
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether this client portal access key is currently active."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() upon creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on create and update."
+        }
+      },
+      "required": [
+        "ownerId",
+        "clientId",
+        "clientName",
+        "clientCompany",
+        "clientColorHex",
+        "portalEmail",
+        "active",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PortalProject": {
+      "title": "PortalProject",
+      "description": "Read-only mirror of a client project exposed under /clientPortals/{portalKey}/projects.",
+      "type": "object",
+      "properties": {
+        "portalKey": {
+          "type": "string",
+          "description": "64-character hex portal key matching parent document ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the workspace owner."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Document ID of the parent client."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the project (1 to 80 characters)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description (0 to 300 characters)."
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Hex accent color."
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display ordering index."
+        },
+        "defaultProject": {
+          "type": "boolean",
+          "description": "Whether this is the client's default project."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "portalKey",
+        "ownerId",
+        "clientId",
+        "name",
+        "description",
+        "colorHex",
+        "sortOrder",
+        "defaultProject",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PortalTask": {
+      "title": "PortalTask",
+      "description": "Client-visible task mirror under /clientPortals/{portalKey}/tasks. Clients may read and create new open tasks only.",
+      "type": "object",
+      "properties": {
+        "portalKey": {
+          "type": "string",
+          "description": "64-character hex portal key matching parent document ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the workspace owner."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Document ID of the parent client."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Document ID of the parent project."
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title (1 to 140 characters)."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional task details (0 to 400 characters)."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["LOW", "NORMAL", "HIGH"],
+          "description": "Task urgency level."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the task is completed (always false on client-created tasks)."
+        },
+        "dueLabel": {
+          "type": "string",
+          "description": "Optional due date label (0 to 40 characters)."
+        },
+        "createdByClient": {
+          "type": "boolean",
+          "description": "Whether this task was submitted via the Client Portal."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "portalKey",
+        "ownerId",
+        "clientId",
+        "projectId",
+        "title",
+        "details",
+        "priority",
+        "completed",
+        "dueLabel",
+        "createdByClient",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/clients/{clientId}": {
+      "schema": {
+        "$ref": "#/entities/Client"
+      },
+      "description": "User-owned client workspaces."
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": {
+        "$ref": "#/entities/ClientProject"
+      },
+      "description": "User-owned projects grouped per clientId."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/ClientTask"
+      },
+      "description": "User-owned tasks scoped to clientId and projectId."
+    },
+    "/clientPortals/{portalKey}": {
+      "schema": {
+        "$ref": "#/entities/ClientPortal"
+      },
+      "description": "Capability-keyed Client Portal access metadata (256-bit derived key)."
+    },
+    "/clientPortals/{portalKey}/projects/{projectId}": {
+      "schema": {
+        "$ref": "#/entities/PortalProject"
+      },
+      "description": "Read-only client project mirrors for an active portal."
+    },
+    "/clientPortals/{portalKey}/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/PortalTask"
+      },
+      "description": "Client-visible task mirrors and create-only client task submissions."
+    }
+  }
+}

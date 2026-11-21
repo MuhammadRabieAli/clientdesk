@@ -1,0 +1,386 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidPortalKey(key) {
+      return key is string && key.size() == 64 && key.matches('^[0-9a-f]{64}$');
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidColorHex(hex) {
+      return hex is string && hex.size() == 7 && hex.matches('^#[0-9A-Fa-f]{6}$');
+    }
+
+    // --- ENTITY VALIDATION BLUEPRINTS ---
+    function isValidClient(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'name', 'company', 'notes', 'colorHex', 'sortOrder', 'archived', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'name', 'company', 'notes', 'colorHex', 'sortOrder', 'archived',
+               'portalEnabled', 'portalEmail', 'portalKey', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.company is string && data.company.size() <= 80 &&
+             data.notes is string && data.notes.size() <= 300 &&
+             isValidColorHex(data.colorHex) &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000000 &&
+             data.archived is bool &&
+             (!('portalEnabled' in data) || data.portalEnabled is bool) &&
+             (!('portalEmail' in data) || (data.portalEmail is string && data.portalEmail.size() <= 120)) &&
+             (!('portalKey' in data) || (data.portalKey is string && (data.portalKey == '' || isValidPortalKey(data.portalKey)))) &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidProject(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'clientId', 'name', 'description', 'colorHex', 'sortOrder',
+               'defaultProject', 'archived', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'clientId', 'name', 'description', 'colorHex', 'sortOrder',
+               'defaultProject', 'archived', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             isValidId(data.clientId) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.description is string && data.description.size() <= 300 &&
+             isValidColorHex(data.colorHex) &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000000 &&
+             data.defaultProject is bool &&
+             data.archived is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidTask(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'clientId', 'title', 'details', 'priority', 'completed', 'dueLabel', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'clientId', 'projectId', 'title', 'details', 'priority', 'completed',
+               'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId &&
+             isValidId(data.clientId) &&
+             (!('projectId' in data) || data.projectId == '' || isValidId(data.projectId)) &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+             data.details is string && data.details.size() <= 400 &&
+             data.priority is string && data.priority in ['LOW', 'NORMAL', 'HIGH'] &&
+             data.completed is bool &&
+             data.dueLabel is string && data.dueLabel.size() <= 40 &&
+             (!('createdByClient' in data) || data.createdByClient is bool) &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidClientPortal(data) {
+      return data.keys().hasAll([
+               'ownerId', 'clientId', 'clientName', 'clientCompany', 'clientColorHex',
+               'portalEmail', 'active', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'ownerId', 'clientId', 'clientName', 'clientCompany', 'clientColorHex',
+               'portalEmail', 'active', 'createdAt', 'updatedAt'
+             ]) &&
+             isValidId(data.ownerId) &&
+             isValidId(data.clientId) &&
+             data.clientName is string && data.clientName.size() >= 1 && data.clientName.size() <= 80 &&
+             data.clientCompany is string && data.clientCompany.size() <= 80 &&
+             isValidColorHex(data.clientColorHex) &&
+             data.portalEmail is string && data.portalEmail.size() >= 3 && data.portalEmail.size() <= 120 &&
+             data.active is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPortalProject(data, portalKey) {
+      return data.keys().hasAll([
+               'portalKey', 'ownerId', 'clientId', 'name', 'description', 'colorHex',
+               'sortOrder', 'defaultProject', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'portalKey', 'ownerId', 'clientId', 'name', 'description', 'colorHex',
+               'sortOrder', 'defaultProject', 'createdAt', 'updatedAt'
+             ]) &&
+             data.portalKey is string && data.portalKey == portalKey &&
+             isValidId(data.ownerId) &&
+             isValidId(data.clientId) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.description is string && data.description.size() <= 300 &&
+             isValidColorHex(data.colorHex) &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000000 &&
+             data.defaultProject is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPortalTask(data, portalKey) {
+      return data.keys().hasAll([
+               'portalKey', 'ownerId', 'clientId', 'projectId', 'title', 'details',
+               'priority', 'completed', 'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'portalKey', 'ownerId', 'clientId', 'projectId', 'title', 'details',
+               'priority', 'completed', 'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
+             ]) &&
+             data.portalKey is string && data.portalKey == portalKey &&
+             isValidId(data.ownerId) &&
+             isValidId(data.clientId) &&
+             isValidId(data.projectId) &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+             data.details is string && data.details.size() <= 400 &&
+             data.priority is string && data.priority in ['LOW', 'NORMAL', 'HIGH'] &&
+             data.completed is bool &&
+             data.dueLabel is string && data.dueLabel.size() <= 40 &&
+             data.createdByClient is bool &&
+             data.createdAt is timestamp &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // --- OWNER WORKSPACE COLLECTIONS ---
+    match /users/{userId}/clients/{clientId} {
+      allow get: if isOwner(userId) && isValidId(clientId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(clientId) &&
+                       isValidClient(incoming(), userId) &&
+                       isValidTimestamp(incoming().createdAt);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(clientId) &&
+                       isValidClient(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action: Update client profile and/or portal credentials
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'company', 'notes', 'colorHex',
+                           'portalEnabled', 'portalEmail', 'portalKey', 'updatedAt'
+                         ]) ||
+                         // Action: Toggle archive
+                         incoming().diff(existing()).affectedKeys().hasOnly(['archived', 'updatedAt']) ||
+                         // Action: Reorder client
+                         incoming().diff(existing()).affectedKeys().hasOnly(['sortOrder', 'updatedAt'])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(clientId);
+    }
+
+    match /users/{userId}/projects/{projectId} {
+      allow get: if isOwner(userId) && isValidId(projectId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(projectId) &&
+                       isValidProject(incoming(), userId) &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       existsAfter(/databases/$(database)/documents/users/$(userId)/clients/$(incoming().clientId));
+
+      allow update: if isOwner(userId) &&
+                       isValidId(projectId) &&
+                       isValidProject(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().clientId == existing().clientId &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action: Update project details
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'colorHex', 'updatedAt']) ||
+                         // Action: Reorder project
+                         incoming().diff(existing()).affectedKeys().hasOnly(['sortOrder', 'updatedAt']) ||
+                         // Action: Archive project
+                         incoming().diff(existing()).affectedKeys().hasOnly(['archived', 'updatedAt']) ||
+                         // Action: Update defaultProject flag
+                         incoming().diff(existing()).affectedKeys().hasOnly(['defaultProject', 'updatedAt'])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(projectId);
+    }
+
+    match /users/{userId}/tasks/{taskId} {
+      allow get: if isOwner(userId) && isValidId(taskId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(taskId) &&
+                       isValidTask(incoming(), userId) &&
+                       'projectId' in incoming() && isValidId(incoming().projectId) &&
+                       'createdByClient' in incoming() && incoming().createdByClient is bool &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       existsAfter(/databases/$(database)/documents/users/$(userId)/clients/$(incoming().clientId)) &&
+                       existsAfter(/databases/$(database)/documents/users/$(userId)/projects/$(incoming().projectId));
+
+      allow update: if isOwner(userId) &&
+                       isValidId(taskId) &&
+                       isValidTask(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().clientId == existing().clientId &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action: Quick toggle done (from app or home screen widget)
+                         incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']) ||
+                         // Action: Edit task fields (and optionally reassign project within same client)
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'title', 'details', 'priority', 'dueLabel', 'completed', 'projectId', 'updatedAt'
+                           ]) &&
+                           (!('projectId' in incoming()) || incoming().projectId == '' ||
+                             exists(/databases/$(database)/documents/users/$(userId)/projects/$(incoming().projectId)))
+                         ) ||
+                         // Action: Legacy task migration to default project
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['projectId', 'createdByClient', 'updatedAt']) &&
+                           'projectId' in incoming() && isValidId(incoming().projectId) &&
+                           existsAfter(/databases/$(database)/documents/users/$(userId)/projects/$(incoming().projectId))
+                         )
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(taskId);
+    }
+
+    // --- CLIENT PORTAL COLLECTIONS (256-BIT PBKDF2 KEYED ACCESS) ---
+    match /clientPortals/{portalKey} {
+      // Enumeration of client portals or emails is strictly forbidden
+      allow list: if false;
+
+      // Single-doc get requires knowing the exact 64-hex PBKDF2-derived portal key
+      allow get: if isValidPortalKey(portalKey) && (
+                   isOwner(existing().ownerId) ||
+                   existing().active == true
+                 );
+
+      allow create: if isSignedIn() &&
+                       isValidPortalKey(portalKey) &&
+                       isValidClientPortal(incoming()) &&
+                       incoming().ownerId == request.auth.uid &&
+                       isValidTimestamp(incoming().createdAt) &&
+                       existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/clients/$(incoming().clientId));
+
+      allow update: if isSignedIn() &&
+                       isValidPortalKey(portalKey) &&
+                       isValidClientPortal(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().clientId == existing().clientId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'clientName', 'clientCompany', 'clientColorHex', 'portalEmail', 'active', 'updatedAt'
+                       ]);
+
+      allow delete: if isSignedIn() &&
+                       isValidPortalKey(portalKey) &&
+                       existing().ownerId == request.auth.uid;
+
+      // Read-only client project mirrors (Owner writes; Client reads only)
+      match /projects/{projectId} {
+        allow get: if isValidPortalKey(portalKey) &&
+                      isValidId(projectId) &&
+                      existing().portalKey == portalKey;
+        allow list: if isValidPortalKey(portalKey) &&
+                       resource.data.portalKey == portalKey;
+
+        allow create: if isSignedIn() &&
+                         isValidPortalKey(portalKey) &&
+                         isValidId(projectId) &&
+                         isValidPortalProject(incoming(), portalKey) &&
+                         incoming().ownerId == request.auth.uid &&
+                         isValidTimestamp(incoming().createdAt);
+
+        allow update: if isSignedIn() &&
+                         isValidPortalKey(portalKey) &&
+                         isValidId(projectId) &&
+                         isValidPortalProject(incoming(), portalKey) &&
+                         existing().ownerId == request.auth.uid &&
+                         incoming().ownerId == existing().ownerId &&
+                         incoming().clientId == existing().clientId &&
+                         incoming().portalKey == existing().portalKey &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'description', 'colorHex', 'sortOrder', 'defaultProject', 'updatedAt'
+                         ]);
+
+        allow delete: if isSignedIn() &&
+                         isValidPortalKey(portalKey) &&
+                         isValidId(projectId) &&
+                         existing().ownerId == request.auth.uid;
+      }
+
+      // Client task mirror + Create-Only submission for Clients (NO client edits/status changes/deletes)
+      match /tasks/{taskId} {
+        allow get: if isValidPortalKey(portalKey) &&
+                      isValidId(taskId) &&
+                      existing().portalKey == portalKey;
+        allow list: if isValidPortalKey(portalKey) &&
+                       resource.data.portalKey == portalKey;
+
+        allow create: if isValidPortalKey(portalKey) &&
+                         isValidId(taskId) &&
+                         isValidPortalTask(incoming(), portalKey) &&
+                         isValidTimestamp(incoming().createdAt) && (
+                           // Branch 1: Workspace Owner syncing tasks to the client portal
+                           (isSignedIn() && incoming().ownerId == request.auth.uid) ||
+                           // Branch 2: Client submitting a brand-new OPEN task into one of their projects
+                           (
+                             incoming().completed == false &&
+                             incoming().createdByClient == true &&
+                             exists(/databases/$(database)/documents/clientPortals/$(portalKey)) &&
+                             get(/databases/$(database)/documents/clientPortals/$(portalKey)).data.active == true &&
+                             incoming().ownerId == get(/databases/$(database)/documents/clientPortals/$(portalKey)).data.ownerId &&
+                             incoming().clientId == get(/databases/$(database)/documents/clientPortals/$(portalKey)).data.clientId &&
+                             exists(/databases/$(database)/documents/clientPortals/$(portalKey)/projects/$(incoming().projectId))
+                           )
+                         );
+
+        // ONLY Workspace Owner can edit tasks or toggle completion status
+        allow update: if isSignedIn() &&
+                         isValidPortalKey(portalKey) &&
+                         isValidId(taskId) &&
+                         isValidPortalTask(incoming(), portalKey) &&
+                         existing().ownerId == request.auth.uid &&
+                         incoming().ownerId == existing().ownerId &&
+                         incoming().clientId == existing().clientId &&
+                         incoming().portalKey == existing().portalKey &&
+                         incoming().createdAt == existing().createdAt && (
+                           incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'title', 'details', 'priority', 'dueLabel', 'completed', 'projectId', 'updatedAt'
+                           ])
+                         );
+
+        // ONLY Workspace Owner can delete tasks
+        allow delete: if isSignedIn() &&
+                         isValidPortalKey(portalKey) &&
+                         isValidId(taskId) &&
+                         existing().ownerId == request.auth.uid;
+      }
+    }
+  }
+}

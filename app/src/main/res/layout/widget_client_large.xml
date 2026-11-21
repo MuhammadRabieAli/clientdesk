@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget_card"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Client Accent Strip -->
+    <ImageView
+        android:id="@+id/widget_accent_bar"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginBottom="10dp"
+        android:contentDescription="@null"
+        android:scaleType="fitXY"
+        android:src="@drawable/bg_widget_accent_bar" />
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/widget_client_dot"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/bg_widget_dot" />
+
+        <LinearLayout
+            android:id="@+id/widget_header_open_area"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_client_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/widget_empty_title"
+                android:textAlignment="textStart"
+                android:textColor="#14171A"
+                android:textDirection="firstStrong"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_task_counter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/widget_empty_body"
+                android:textColor="#525A63"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_btn_filter"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_widget_pill"
+            android:gravity="center"
+            android:paddingHorizontal="10dp"
+            android:text="@string/widget_filter_open"
+            android:textColor="#14171A"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_prev"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bg_widget_pill"
+            android:contentDescription="@string/widget_prev_client_cd"
+            android:padding="5dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_prev" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_next"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_widget_pill"
+            android:contentDescription="@string/widget_next_client_cd"
+            android:padding="5dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_next" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_add"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_widget_pill_active"
+            android:contentDescription="@string/widget_add_task_cd"
+            android:padding="5dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_widget_add" />
+    </LinearLayout>
+
+    <!-- Progress Row (Light / Dark swapped dynamically) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ProgressBar
+            android:id="@+id/widget_progress_bar_light"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="6dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/bg_widget_progress" />
+
+        <ProgressBar
+            android:id="@+id/widget_progress_bar_dark"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="6dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/bg_widget_progress_dark"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_percent_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="#525A63"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Client Switcher Tabs (up to 4) -->
+    <LinearLayout
+        android:id="@+id/widget_client_tabs_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="9dp"
+        android:orientation="horizontal">
+
+        <TextView android:id="@+id/widget_tab_0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/bg_widget_pill_active" android:ellipsize="end" android:gravity="center" android:maxLines="1" android:paddingHorizontal="6dp" android:paddingVertical="5dp" android:textColor="#FFFFFF" android:textDirection="firstStrong" android:textSize="11sp" android:textStyle="bold" android:visibility="gone" />
+        <TextView android:id="@+id/widget_tab_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:background="@drawable/bg_widget_pill" android:ellipsize="end" android:gravity="center" android:maxLines="1" android:paddingHorizontal="6dp" android:paddingVertical="5dp" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="11sp" android:visibility="gone" />
+        <TextView android:id="@+id/widget_tab_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:background="@drawable/bg_widget_pill" android:ellipsize="end" android:gravity="center" android:maxLines="1" android:paddingHorizontal="6dp" android:paddingVertical="5dp" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="11sp" android:visibility="gone" />
+        <TextView android:id="@+id/widget_tab_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:layout_weight="1" android:background="@drawable/bg_widget_pill" android:ellipsize="end" android:gravity="center" android:maxLines="1" android:paddingHorizontal="6dp" android:paddingVertical="5dp" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="11sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_empty_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="@string/widget_no_tasks"
+        android:textColor="#7B848E"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- 7 Interactive Task Rows -->
+    <LinearLayout android:id="@+id/widget_task_row_0" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="9dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_0" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_0" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_0" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_1" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_1" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_2" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_2" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_3" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_3" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_4" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_4" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_4" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_5" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_5" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_5" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_task_row_6" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:background="@drawable/bg_widget_task_row" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="9dp" android:paddingVertical="7dp" android:visibility="gone">
+        <ImageView android:id="@+id/widget_task_priority_6" android:layout_width="3dp" android:layout_height="16dp" android:layout_marginEnd="6dp" android:contentDescription="@null" android:src="@drawable/bg_widget_priority_high" android:visibility="gone" />
+        <ImageView android:id="@+id/widget_task_check_6" android:layout_width="19dp" android:layout_height="19dp" android:contentDescription="@string/widget_toggle_task_cd" android:src="@drawable/ic_widget_check_off" />
+        <TextView android:id="@+id/widget_task_title_6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAlignment="textStart" android:textColor="#14171A" android:textDirection="firstStrong" android:textSize="13sp" />
+        <TextView android:id="@+id/widget_task_due_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:background="@drawable/bg_widget_due_pill" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:textColor="#525A63" android:textDirection="firstStrong" android:textSize="10sp" android:visibility="gone" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_more_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="end"
+        android:textColor="#7B848E"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</LinearLayout>
