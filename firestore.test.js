@@ -232,10 +232,27 @@ test("Owner can atomically create client + default project + tasks, edit, move p
     })
   );
 
+  // Mark ongoing
+  await assertSucceeds(
+    taskRef.update({
+      ongoing: true,
+      updatedAt: pastTime(700),
+    })
+  );
+
+  // Reject non-boolean ongoing
+  await assertFails(
+    taskRef.update({
+      ongoing: "yes",
+      updatedAt: pastTime(600),
+    })
+  );
+
   // Toggle completed
   await assertSucceeds(
     taskRef.update({
       completed: true,
+      ongoing: false,
       updatedAt: pastTime(500),
     })
   );

@@ -173,7 +173,7 @@ class GeminiVoiceAssistant {
                         "filterMode",
                         JSONObject()
                             .put("type", "STRING")
-                            .put("description", "Optional task filter if requested: ALL, OPEN, or DONE.")
+                            .put("description", "Optional task filter if requested: ALL, OPEN, ONGOING, or DONE.")
                     )
             )
             .put(
@@ -215,7 +215,7 @@ class GeminiVoiceAssistant {
             indexedTasks.mapIndexed { idx, task ->
                 val ref = idx + 1
                 val cName = clientNameById[task.clientId] ?: "Unknown"
-                val status = if (task.completed) "DONE" else "OPEN"
+                val status = task.statusEnum().raw
                 val due = if (task.dueLabel.isNotBlank()) ", due: ${task.dueLabel}" else ""
                 "#$ref [$status | ${task.priority} | $cName$due] ${task.title}"
             }.joinToString("\n")
@@ -404,6 +404,7 @@ class GeminiVoiceAssistant {
         val parsedFilter = when (root.optString("filterMode", "").trim().uppercase()) {
             "ALL" -> TaskFilter.ALL
             "OPEN" -> TaskFilter.OPEN
+            "ONGOING", "IN_PROGRESS" -> TaskFilter.ONGOING
             "DONE" -> TaskFilter.DONE
             else -> null
         }

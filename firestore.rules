@@ -89,7 +89,7 @@ service cloud.firestore {
              ]) &&
              data.keys().hasOnly([
                'userId', 'clientId', 'projectId', 'title', 'details', 'priority', 'completed',
-               'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
+               'ongoing', 'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
              ]) &&
              data.userId is string && data.userId == userId &&
              isValidId(data.clientId) &&
@@ -98,6 +98,7 @@ service cloud.firestore {
              data.details is string && data.details.size() <= 400 &&
              data.priority is string && data.priority in ['LOW', 'NORMAL', 'HIGH'] &&
              data.completed is bool &&
+             (!('ongoing' in data) || data.ongoing is bool) &&
              data.dueLabel is string && data.dueLabel.size() <= 40 &&
              (!('createdByClient' in data) || data.createdByClient is bool) &&
              data.createdAt is timestamp &&
@@ -152,7 +153,7 @@ service cloud.firestore {
              ]) &&
              data.keys().hasOnly([
                'portalKey', 'ownerId', 'clientId', 'projectId', 'title', 'details',
-               'priority', 'completed', 'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
+               'priority', 'completed', 'ongoing', 'dueLabel', 'createdByClient', 'createdAt', 'updatedAt'
              ]) &&
              data.portalKey is string && data.portalKey == portalKey &&
              isValidId(data.ownerId) &&
@@ -162,6 +163,7 @@ service cloud.firestore {
              data.details is string && data.details.size() <= 400 &&
              data.priority is string && data.priority in ['LOW', 'NORMAL', 'HIGH'] &&
              data.completed is bool &&
+             (!('ongoing' in data) || data.ongoing is bool) &&
              data.dueLabel is string && data.dueLabel.size() <= 40 &&
              data.createdByClient is bool &&
              data.createdAt is timestamp &&
@@ -246,11 +248,11 @@ service cloud.firestore {
                        incoming().clientId == existing().clientId &&
                        incoming().createdAt == existing().createdAt && (
                          // Action: Quick toggle done (from app or home screen widget)
-                         incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']) ||
+                         incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'ongoing', 'updatedAt']) ||
                          // Action: Edit task fields (and optionally reassign project within same client)
                          (
                            incoming().diff(existing()).affectedKeys().hasOnly([
-                             'title', 'details', 'priority', 'dueLabel', 'completed', 'projectId', 'updatedAt'
+                             'title', 'details', 'priority', 'dueLabel', 'completed', 'ongoing', 'projectId', 'updatedAt'
                            ]) &&
                            (!('projectId' in incoming()) || incoming().projectId == '' ||
                              exists(/databases/$(database)/documents/users/$(userId)/projects/$(incoming().projectId)))
@@ -350,6 +352,7 @@ service cloud.firestore {
                            // Branch 2: Client submitting a brand-new OPEN task into one of their projects
                            (
                              incoming().completed == false &&
+                             (!('ongoing' in incoming()) || incoming().ongoing == false) &&
                              incoming().createdByClient == true &&
                              exists(/databases/$(database)/documents/clientPortals/$(portalKey)) &&
                              get(/databases/$(database)/documents/clientPortals/$(portalKey)).data.active == true &&
@@ -369,9 +372,9 @@ service cloud.firestore {
                          incoming().clientId == existing().clientId &&
                          incoming().portalKey == existing().portalKey &&
                          incoming().createdAt == existing().createdAt && (
-                           incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'updatedAt']) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly(['completed', 'ongoing', 'updatedAt']) ||
                            incoming().diff(existing()).affectedKeys().hasOnly([
-                             'title', 'details', 'priority', 'dueLabel', 'completed', 'projectId', 'updatedAt'
+                             'title', 'details', 'priority', 'dueLabel', 'completed', 'ongoing', 'projectId', 'updatedAt'
                            ])
                          );
 

@@ -197,7 +197,7 @@ class GeminiWorkspaceAssistant {
                 .take(35)
                 .joinToString("\n") { t ->
                     val clientName = clientsById[t.clientId]?.name ?: "Unknown"
-                    val state = if (t.completed) "DONE" else "OPEN"
+                    val state = t.statusEnum().raw
                     "- id=${t.id} | client=$clientName | status=$state | title=${t.title}"
                 }
         }

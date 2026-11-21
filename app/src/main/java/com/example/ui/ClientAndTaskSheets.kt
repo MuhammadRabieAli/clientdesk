@@ -72,6 +72,7 @@ import com.example.data.ClientProject
 import com.example.data.ClientTask
 import com.example.data.PortalCrypto
 import com.example.data.TaskPriority
+import com.example.data.TaskStatus
 import com.example.ui.theme.ClientColorPalette
 import com.example.ui.theme.parseClientColor
 
@@ -678,7 +679,7 @@ fun TaskEditorSheet(
         details: String,
         priority: TaskPriority,
         dueLabel: String,
-        completed: Boolean
+        status: TaskStatus
     ) -> Unit,
     onDelete: ((ClientTask) -> Unit)? = null
 ) {
@@ -719,6 +720,9 @@ fun TaskEditorSheet(
     var dueLabel by remember(existingTask) { mutableStateOf(existingTask?.dueLabel.orEmpty()) }
     var priority by remember(existingTask) {
         mutableStateOf(existingTask?.priorityEnum() ?: TaskPriority.NORMAL)
+    }
+    var status by remember(existingTask) {
+        mutableStateOf(existingTask?.statusEnum() ?: TaskStatus.OPEN)
     }
 
     val canSave = title.trim().isNotEmpty() && selectedClientId.isNotBlank() && !isBusy
@@ -943,6 +947,54 @@ fun TaskEditorSheet(
                 }
             }
 
+            if (isEditing) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.field_task_status),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TaskStatus.entries.forEach { option ->
+                            val selected = status == option
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { status = option }
+                                    .testTag("status_${option.raw.lowercase()}")
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = stringResource(option.labelRes()),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
@@ -967,7 +1019,7 @@ fun TaskEditorSheet(
                             details,
                             priority,
                             dueLabel,
-                            existingTask?.completed ?: false
+                            status
                         )
                     },
                     enabled = canSave,

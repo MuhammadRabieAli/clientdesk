@@ -18,6 +18,32 @@ enum class TaskPriority(val raw: String, val label: String) {
     }
 }
 
+/**
+ * Task lifecycle. Stored in Firestore as two booleans (`completed`, `ongoing`) so documents written
+ * by older app versions (which only know `completed`) stay valid: a missing `ongoing` reads as false.
+ * `completed` always wins over `ongoing`.
+ */
+enum class TaskStatus(val raw: String) {
+    OPEN("OPEN"),
+    ONGOING("ONGOING"),
+    DONE("DONE");
+
+    /** Tap order on the task checkbox: Open -> Ongoing -> Done -> Open. */
+    fun next(): TaskStatus = when (this) {
+        OPEN -> ONGOING
+        ONGOING -> DONE
+        DONE -> OPEN
+    }
+
+    companion object {
+        fun of(completed: Boolean, ongoing: Boolean): TaskStatus = when {
+            completed -> DONE
+            ongoing -> ONGOING
+            else -> OPEN
+        }
+    }
+}
+
 @Immutable
 @Keep
 @IgnoreExtraProperties
@@ -66,12 +92,14 @@ data class ClientTask(
     val details: String = "",
     val priority: String = TaskPriority.NORMAL.raw,
     val completed: Boolean = false,
+    val ongoing: Boolean = false,
     val dueLabel: String = "",
     val createdByClient: Boolean = false,
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 ) {
     fun priorityEnum(): TaskPriority = TaskPriority.fromRaw(priority)
+    fun statusEnum(): TaskStatus = TaskStatus.of(completed, ongoing)
 }
 
 @Immutable
@@ -120,12 +148,14 @@ data class PortalTask(
     val details: String = "",
     val priority: String = TaskPriority.NORMAL.raw,
     val completed: Boolean = false,
+    val ongoing: Boolean = false,
     val dueLabel: String = "",
     val createdByClient: Boolean = false,
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 ) {
     fun priorityEnum(): TaskPriority = TaskPriority.fromRaw(priority)
+    fun statusEnum(): TaskStatus = TaskStatus.of(completed, ongoing)
 }
 
 @Immutable

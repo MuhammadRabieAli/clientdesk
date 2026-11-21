@@ -105,6 +105,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import com.example.R
 import com.example.data.Client
 import com.example.data.ClientProject
@@ -167,6 +169,8 @@ private data class WorkspaceRowPalette(
     val toggleTaskCd: String,
     val addTaskCd: String,
     val noDoneTasksLabel: String,
+    val noOngoingTasksLabel: String,
+    val ongoingLabel: String,
     val allDoneLabel: String,
     val cardRipple: Indication,
     val iconRipple: Indication
@@ -181,6 +185,8 @@ private fun rememberWorkspaceRowPalette(): WorkspaceRowPalette {
     val toggleTaskCd = stringResource(R.string.widget_toggle_task_cd)
     val addTaskCd = stringResource(R.string.workspace_add_task)
     val noDoneTasksLabel = stringResource(R.string.workspace_no_done_tasks)
+    val noOngoingTasksLabel = stringResource(R.string.workspace_no_ongoing_tasks)
+    val ongoingLabel = stringResource(R.string.task_status_ongoing)
     val allDoneLabel = stringResource(R.string.workspace_all_done)
     val cardRipple = remember { ripple(bounded = true) }
     val iconRipple = remember { ripple(bounded = false, radius = 20.dp) }
@@ -193,6 +199,8 @@ private fun rememberWorkspaceRowPalette(): WorkspaceRowPalette {
         toggleTaskCd,
         addTaskCd,
         noDoneTasksLabel,
+        noOngoingTasksLabel,
+        ongoingLabel,
         allDoneLabel
     ) {
         val cardSurface = colorScheme.surfaceContainerLowest
@@ -247,6 +255,8 @@ private fun rememberWorkspaceRowPalette(): WorkspaceRowPalette {
             toggleTaskCd = toggleTaskCd,
             addTaskCd = addTaskCd,
             noDoneTasksLabel = noDoneTasksLabel,
+            noOngoingTasksLabel = noOngoingTasksLabel,
+            ongoingLabel = ongoingLabel,
             allDoneLabel = allDoneLabel,
             cardRipple = cardRipple,
             iconRipple = iconRipple
@@ -337,6 +347,7 @@ fun TasksWorkspaceScreen(
             val visible = when (taskFilter) {
                 TaskFilter.ALL -> allTasks
                 TaskFilter.OPEN -> workspace.openPreparedByClient[client.id].orEmpty()
+                TaskFilter.ONGOING -> workspace.ongoingPreparedByClient[client.id].orEmpty()
                 TaskFilter.DONE -> workspace.donePreparedByClient[client.id].orEmpty()
             }
             val accent = workspace.clientAccentById[client.id] ?: parseClientColor(client.colorHex)
@@ -345,6 +356,7 @@ fun TasksWorkspaceScreen(
             val bidiName = bidiIsolate(client.name)
             val subtitle = when {
                 taskFilter == TaskFilter.DONE && visible.isEmpty() -> palette.noDoneTasksLabel
+                taskFilter == TaskFilter.ONGOING && visible.isEmpty() -> palette.noOngoingTasksLabel
                 allTasks.isEmpty() -> resources.getString(R.string.workspace_empty_tasks_title, bidiName)
                 openTaskCount == 0 -> palette.allDoneLabel
                 projectCount > 1 -> {
@@ -886,7 +898,12 @@ private fun SingleProjectTasksList(
     val listState = remember(project.id) { LazyListState() }
 
     val showOpen = taskFilter != TaskFilter.DONE
-    val showDone = taskFilter != TaskFilter.OPEN
+    val showDone = taskFilter == TaskFilter.ALL || taskFilter == TaskFilter.DONE
+    val visibleOpenTasks = if (taskFilter == TaskFilter.ONGOING) {
+        workspace.ongoingPreparedByProject[project.id].orEmpty()
+    } else {
+        openTasks
+    }
 
     LazyColumn(
         state = listState,
@@ -1019,7 +1036,26 @@ private fun SingleProjectTasksList(
         }
 
         if (showOpen) {
-            if (openTasks.isEmpty() && (taskFilter == TaskFilter.OPEN || doneTasks.isEmpty())) {
+            if (taskFilter == TaskFilter.ONGOING && visibleOpenTasks.isEmpty()) {
+                item(key = "empty_ongoing_${project.id}", contentType = "empty_done") {
+                    Surface(
+                        shape = TaskCardShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                    ) {
+                        Text(
+                            text = palette.noOngoingTasksLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(24.dp)
+                        )
+                    }
+                }
+            } else if (openTasks.isEmpty() && (taskFilter == TaskFilter.OPEN || doneTasks.isEmpty())) {
                 item(key = "empty_open_${project.id}", contentType = "empty_open") {
                     AllCaughtUpCard(
                         targetName = project.name,
@@ -1030,7 +1066,7 @@ private fun SingleProjectTasksList(
                 }
             } else {
                 items(
-                    items = openTasks,
+                    items = visibleOpenTasks,
                     key = { it.task.id },
                     contentType = { "task_row" }
                 ) { prepared ->
@@ -1138,14 +1174,19 @@ private fun FilterBarRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            // Four pills + the collapse control can be wider than small phones: scroll instead of clipping.
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .horizontalScroll(rememberScrollState())
         ) {
             TaskFilter.entries.forEach { filter ->
                 val active = taskFilter == filter
                 val labelRes = when (filter) {
                     TaskFilter.ALL -> R.string.workspace_filter_all
                     TaskFilter.OPEN -> R.string.workspace_filter_open
+                    TaskFilter.ONGOING -> R.string.workspace_filter_ongoing
                     TaskFilter.DONE -> R.string.workspace_filter_done
                 }
                 Box(
@@ -1165,7 +1206,7 @@ private fun FilterBarRow(
                             indication = cardRipple,
                             onClick = { onSetFilter(filter) }
                         )
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 14.dp)
                         .testTag("filter_${filter.name.lowercase()}")
                 ) {
                     Text(
@@ -1421,7 +1462,10 @@ private fun FastTaskRowCard(
         if (prepared.isTitleRtl) palette.titleOpenRtl else palette.titleOpenLtr
     }
 
+    val isOngoing = !task.completed && task.ongoing
     val metaSegments = remember(
+        isOngoing,
+        palette.ongoingLabel,
         showProjectTag,
         prepared.projectName,
         prepared.hasDue,
@@ -1430,6 +1474,9 @@ private fun FastTaskRowCard(
         palette.clientRequestedLabel
     ) {
         buildList {
+            if (isOngoing) {
+                add(palette.ongoingLabel)
+            }
             if (showProjectTag && prepared.projectName.isNotBlank()) {
                 add(prepared.projectName)
             }
@@ -1471,11 +1518,30 @@ private fun FastTaskRowCard(
                         val p1 = Offset(cx - 4.3.dp.toPx(), cy + 0.3.dp.toPx())
                         val p2 = Offset(cx - 1.2.dp.toPx(), cy + 3.4.dp.toPx())
                         val p3 = Offset(cx + 4.8.dp.toPx(), cy - 3.1.dp.toPx())
+                        val innerRadius = radius - strokeW * 1.75f
+                        val innerTopLeft = Offset(cx - innerRadius, cy - innerRadius)
+                        val innerSize = Size(innerRadius * 2f, innerRadius * 2f)
                         onDrawBehind {
                             if (task.completed) {
                                 drawCircle(color = accent, radius = radius, center = center)
                                 drawLine(Color.White, p1, p2, strokeWidth = strokeW, cap = StrokeCap.Round)
                                 drawLine(Color.White, p2, p3, strokeWidth = strokeW, cap = StrokeCap.Round)
+                            } else if (task.ongoing) {
+                                // Ring + right half filled = in progress.
+                                drawCircle(
+                                    color = OngoingAmber,
+                                    radius = uncheckedRadius,
+                                    center = center,
+                                    style = uncheckedStroke
+                                )
+                                drawArc(
+                                    color = OngoingAmber,
+                                    startAngle = -90f,
+                                    sweepAngle = 180f,
+                                    useCenter = true,
+                                    topLeft = innerTopLeft,
+                                    size = innerSize
+                                )
                             } else {
                                 drawCircle(
                                     color = palette.uncheckedBorder,
@@ -1542,6 +1608,10 @@ private fun FastTaskRowCard(
             .semantics {
                 contentDescription = buildString {
                     append(task.title)
+                    if (isOngoing) {
+                        append(", ")
+                        append(palette.ongoingLabel)
+                    }
                     if (prepared.hasDetails) {
                         append(", ")
                         append(task.details)

@@ -99,6 +99,7 @@ class ClientDeskRepository(
                         DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
                     ).sortedWith(
                         compareBy<ClientTask> { it.completed }
+                            .thenBy { !it.ongoing }
                             .thenByDescending { priorityRank(it.priority) }
                             .thenByDescending { it.createdAt ?: Timestamp(0, 0) }
                     )
@@ -212,7 +213,8 @@ class ClientDeskRepository(
                         priority = task.priorityEnum(),
                         completed = task.completed,
                         dueLabel = task.dueLabel.trim().take(40),
-                        createdByClient = task.createdByClient
+                        createdByClient = task.createdByClient,
+                        ongoing = task.ongoing
                     )
                     ops.add { batch -> batch.set(portalTaskRef, portalTaskPayload) }
                 }
@@ -812,18 +814,44 @@ class ClientDeskRepository(
         taskId: String,
         completed: Boolean,
         portalKey: String = ""
+    ): Result<Unit> = writeTaskStatus(userId, taskId, completed, ongoing = null, portalKey = portalKey)
+
+    /**
+     * Sets a task's status. `ongoing` is only written when the task is, or was, ongoing, so plain
+     * open/done toggles keep producing the exact same writes as before the Ongoing status existed.
+     */
+    suspend fun setTaskStatus(
+        userId: String,
+        taskId: String,
+        status: TaskStatus,
+        wasOngoing: Boolean,
+        portalKey: String = ""
+    ): Result<Unit> = writeTaskStatus(
+        userId = userId,
+        taskId = taskId,
+        completed = status == TaskStatus.DONE,
+        ongoing = if (status == TaskStatus.ONGOING || wasOngoing) status == TaskStatus.ONGOING else null,
+        portalKey = portalKey
+    )
+
+    private suspend fun writeTaskStatus(
+        userId: String,
+        taskId: String,
+        completed: Boolean,
+        ongoing: Boolean?,
+        portalKey: String
     ): Result<Unit> {
         val docPath = "users/$userId/tasks/$taskId"
         return try {
             val uid = requireUserId(userId)
             require(taskId.isNotBlank()) { "Task ID must not be blank." }
+            val payload = buildMap<String, Any> {
+                put("completed", completed)
+                if (ongoing != null) put("ongoing", ongoing)
+                put("updatedAt", FieldValue.serverTimestamp())
+            }
             db.collection("users").document(uid).collection("tasks").document(taskId)
-                .update(
-                    mapOf(
-                        "completed" to completed,
-                        "updatedAt" to FieldValue.serverTimestamp()
-                    )
-                )
+                .update(payload)
                 .await()
 
             if (PortalCrypto.isValidPortalKey(portalKey)) {
@@ -832,12 +860,7 @@ class ClientDeskRepository(
                         .document(portalKey)
                         .collection("tasks")
                         .document(taskId)
-                        .update(
-                            mapOf(
-                                "completed" to completed,
-                                "updatedAt" to FieldValue.serverTimestamp()
-                            )
-                        )
+                        .update(payload)
                         .await()
                 }
             }
@@ -859,6 +882,7 @@ class ClientDeskRepository(
         priority: TaskPriority,
         dueLabel: String,
         completed: Boolean,
+        ongoing: Boolean? = null,
         portalKey: String = ""
     ): Result<Unit> {
         val docPath = "users/$userId/tasks/$taskId"
@@ -876,6 +900,9 @@ class ClientDeskRepository(
                 put("priority", priority.raw)
                 put("dueLabel", cleanDue)
                 put("completed", completed)
+                if (ongoing != null) {
+                    put("ongoing", ongoing)
+                }
                 if (projectId.isNotBlank()) {
                     put("projectId", projectId)
                 }
@@ -1108,6 +1135,7 @@ class ClientDeskRepository(
                         DocumentSnapshot.ServerTimestampBehavior.ESTIMATE
                     ).sortedWith(
                         compareBy<PortalTask> { it.completed }
+                            .thenBy { !it.ongoing }
                             .thenByDescending { priorityRank(it.priority) }
                             .thenByDescending { it.createdAt ?: Timestamp(0, 0) }
                     )
@@ -1252,7 +1280,8 @@ class ClientDeskRepository(
                         priority = task.priorityEnum(),
                         completed = task.completed,
                         dueLabel = task.dueLabel.trim().take(40),
-                        createdByClient = task.createdByClient
+                        createdByClient = task.createdByClient,
+                        ongoing = task.ongoing
                     )
                 )
             }
@@ -1378,21 +1407,24 @@ class ClientDeskRepository(
         priority: TaskPriority,
         completed: Boolean,
         dueLabel: String,
-        createdByClient: Boolean
-    ): Map<String, Any> = mapOf(
-        "portalKey" to portalKey,
-        "ownerId" to ownerId,
-        "clientId" to clientId,
-        "projectId" to projectId,
-        "title" to title,
-        "details" to details,
-        "priority" to priority.raw,
-        "completed" to completed,
-        "dueLabel" to dueLabel,
-        "createdByClient" to createdByClient,
-        "createdAt" to FieldValue.serverTimestamp(),
-        "updatedAt" to FieldValue.serverTimestamp()
-    )
+        createdByClient: Boolean,
+        ongoing: Boolean = false
+    ): Map<String, Any> = buildMap {
+        put("portalKey", portalKey)
+        put("ownerId", ownerId)
+        put("clientId", clientId)
+        put("projectId", projectId)
+        put("title", title)
+        put("details", details)
+        put("priority", priority.raw)
+        put("completed", completed)
+        // Only written when set, so tasks that were never ongoing keep the original document shape.
+        if (ongoing) put("ongoing", true)
+        put("dueLabel", dueLabel)
+        put("createdByClient", createdByClient)
+        put("createdAt", FieldValue.serverTimestamp())
+        put("updatedAt", FieldValue.serverTimestamp())
+    }
 
     private fun normalizeHexColor(hex: String): String {
         val trimmed = hex.trim()

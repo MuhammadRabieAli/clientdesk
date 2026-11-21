@@ -42,6 +42,7 @@
     <string name="workspace_empty_tasks_body">Add a task below to start tracking deliverables for this project.</string>
     <string name="workspace_filter_all">All</string>
     <string name="workspace_filter_open">Open</string>
+    <string name="workspace_filter_ongoing">Ongoing</string>
     <string name="workspace_filter_done">Done</string>
     <string name="workspace_collapse_client">Collapse %1$s tasks</string>
     <string name="workspace_expand_client">Expand %1$s tasks</string>
@@ -111,6 +112,11 @@
     <string name="field_task_due">Due Label (Optional)</string>
     <string name="field_task_due_placeholder">e.g. Today, Fri, Nov 24</string>
     <string name="field_task_priority">Priority</string>
+    <string name="field_task_status">Status</string>
+    <string name="task_status_open">Open</string>
+    <string name="task_status_ongoing">Ongoing</string>
+    <string name="task_status_done">Done</string>
+    <string name="workspace_no_ongoing_tasks">Nothing in progress right now</string>
     <string name="priority_low">Low</string>
     <string name="priority_normal">Normal</string>
     <string name="priority_high">High</string>
@@ -132,6 +138,7 @@
     <string name="portal_added_by_you">Added by you</string>
     <string name="portal_read_only_note">View-only task · Status and edits are managed by your workspace owner</string>
     <string name="portal_status_open">Open</string>
+    <string name="portal_status_ongoing">In progress</string>
     <string name="portal_status_completed">Completed</string>
     <string name="portal_empty_project_title">No tasks match this filter</string>
     <string name="portal_empty_project_body">Swipe left or right to check another project, or tap Add Task to submit a new request.</string>

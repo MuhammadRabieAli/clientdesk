@@ -21,6 +21,7 @@ import com.example.data.ClientProject
 import com.example.data.ClientTask
 import com.example.data.PortalCrypto
 import com.example.data.TaskPriority
+import com.example.data.TaskStatus
 import com.example.data.UiState
 import com.example.ui.theme.parseClientColor
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -45,7 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class TaskFilter { ALL, OPEN, DONE }
+enum class TaskFilter { ALL, OPEN, ONGOING, DONE }
 
 @Immutable
 data class PreparedTask(
@@ -75,9 +76,11 @@ data class WorkspaceData(
     val preparedByClient: Map<String, List<PreparedTask>> = emptyMap(),
     val openPreparedByClient: Map<String, List<PreparedTask>> = emptyMap(),
     val donePreparedByClient: Map<String, List<PreparedTask>> = emptyMap(),
+    val ongoingPreparedByClient: Map<String, List<PreparedTask>> = emptyMap(),
     val preparedByProject: Map<String, List<PreparedTask>> = emptyMap(),
     val openPreparedByProject: Map<String, List<PreparedTask>> = emptyMap(),
     val donePreparedByProject: Map<String, List<PreparedTask>> = emptyMap(),
+    val ongoingPreparedByProject: Map<String, List<PreparedTask>> = emptyMap(),
     val openCountByClient: Map<String, Int> = emptyMap(),
     val openCountByProject: Map<String, Int> = emptyMap(),
     val totalOpen: Int = 0,
@@ -187,6 +190,8 @@ class ClientDeskViewModel(
         val preparedByProject = HashMap<String, MutableList<PreparedTask>>(activeProjects.size.coerceAtLeast(4))
         val openPreparedByProject = HashMap<String, MutableList<PreparedTask>>(activeProjects.size.coerceAtLeast(4))
         val donePreparedByProject = HashMap<String, MutableList<PreparedTask>>(activeProjects.size.coerceAtLeast(4))
+        val ongoingPreparedByClient = HashMap<String, MutableList<PreparedTask>>(initialCap)
+        val ongoingPreparedByProject = HashMap<String, MutableList<PreparedTask>>(activeProjects.size.coerceAtLeast(4))
         val openCountByClient = HashMap<String, Int>(initialCap)
         val openCountByProject = HashMap<String, Int>(activeProjects.size.coerceAtLeast(4))
         var totalOpen = 0
@@ -219,6 +224,12 @@ class ClientDeskViewModel(
                     openPreparedByProject.getOrPut(resolvedProjectId) { ArrayList() }.add(prepared)
                     openCountByProject[resolvedProjectId] = (openCountByProject[resolvedProjectId] ?: 0) + 1
                 }
+                if (task.ongoing) {
+                    ongoingPreparedByClient.getOrPut(task.clientId) { ArrayList() }.add(prepared)
+                    if (resolvedProjectId.isNotBlank()) {
+                        ongoingPreparedByProject.getOrPut(resolvedProjectId) { ArrayList() }.add(prepared)
+                    }
+                }
                 totalOpen++
             } else {
                 donePreparedByClient.getOrPut(task.clientId) { ArrayList() }.add(prepared)
@@ -244,9 +255,11 @@ class ClientDeskViewModel(
             preparedByClient = preparedByClient,
             openPreparedByClient = openPreparedByClient,
             donePreparedByClient = donePreparedByClient,
+            ongoingPreparedByClient = ongoingPreparedByClient,
             preparedByProject = preparedByProject,
             openPreparedByProject = openPreparedByProject,
             donePreparedByProject = donePreparedByProject,
+            ongoingPreparedByProject = ongoingPreparedByProject,
             openCountByClient = openCountByClient,
             openCountByProject = openCountByProject,
             totalOpen = totalOpen,
@@ -709,13 +722,20 @@ class ClientDeskViewModel(
         }
     }
 
-    fun toggleTaskDone(task: ClientTask) {
+    /** Checkbox tap: Open -> Ongoing -> Done -> Open. */
+    fun cycleTaskStatus(task: ClientTask) {
+        setTaskStatus(task, task.statusEnum().next())
+    }
+
+    fun setTaskStatus(task: ClientTask, status: TaskStatus) {
+        if (task.statusEnum() == status) return
         val portalKey = activePortalKeyFor(task.clientId)
         viewModelScope.launch {
-            val result = repository.toggleTaskCompleted(
+            val result = repository.setTaskStatus(
                 userId = currentUserId,
                 taskId = task.id,
-                completed = !task.completed,
+                status = status,
+                wasOngoing = task.ongoing,
                 portalKey = portalKey
             )
             result.onFailure { err ->
@@ -731,7 +751,7 @@ class ClientDeskViewModel(
         details: String,
         priority: TaskPriority,
         dueLabel: String,
-        completed: Boolean,
+        status: TaskStatus,
         onSuccess: () -> Unit = {}
     ) {
         val portalKey = activePortalKeyFor(task.clientId)
@@ -745,7 +765,9 @@ class ClientDeskViewModel(
                 details = details,
                 priority = priority,
                 dueLabel = dueLabel,
-                completed = completed,
+                completed = status == TaskStatus.DONE,
+                // Only touch `ongoing` when it's involved, so ordinary edits write the same fields as before.
+                ongoing = if (status == TaskStatus.ONGOING || task.ongoing) status == TaskStatus.ONGOING else null,
                 portalKey = portalKey
             )
             _isBusy.value = false

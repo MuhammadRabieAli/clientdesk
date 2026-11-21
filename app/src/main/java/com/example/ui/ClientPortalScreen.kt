@@ -34,6 +34,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import com.example.data.TaskStatus
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.rounded.Timelapse
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -354,6 +357,7 @@ fun ClientPortalScreen(
                                     when (taskFilter) {
                                         TaskFilter.ALL -> projectTasks
                                         TaskFilter.OPEN -> projectTasks.filter { !it.completed }
+                                        TaskFilter.ONGOING -> projectTasks.filter { !it.completed && it.ongoing }
                                         TaskFilter.DONE -> projectTasks.filter { it.completed }
                                     }
                                 }
@@ -706,13 +710,16 @@ private fun PortalProjectPage(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
             ) {
                 TaskFilter.entries.forEach { filter ->
                     val active = taskFilter == filter
                     val labelRes = when (filter) {
                         TaskFilter.ALL -> R.string.workspace_filter_all
                         TaskFilter.OPEN -> R.string.workspace_filter_open
+                        TaskFilter.ONGOING -> R.string.workspace_filter_ongoing
                         TaskFilter.DONE -> R.string.workspace_filter_done
                     }
                     Box(
@@ -818,16 +825,15 @@ private fun PortalReadOnlyTaskCard(
             modifier = Modifier.padding(14.dp)
         ) {
             // Non-interactive read-only status indicator
+            val status = task.statusEnum()
             Icon(
-                imageVector = if (task.completed) {
-                    Icons.Rounded.CheckCircle
-                } else {
-                    Icons.Rounded.RadioButtonUnchecked
+                imageVector = status.portalIcon(),
+                contentDescription = stringResource(status.portalLabelRes()),
+                tint = when (status) {
+                    TaskStatus.DONE -> accent
+                    TaskStatus.ONGOING -> OngoingAmber
+                    TaskStatus.OPEN -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 },
-                contentDescription = stringResource(
-                    if (task.completed) R.string.portal_status_completed else R.string.portal_status_open
-                ),
-                tint = if (task.completed) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier
                     .padding(top = 2.dp)
                     .size(22.dp)
@@ -971,9 +977,19 @@ private fun PortalTaskDetailReadOnlySheet(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val status = task.statusEnum()
+                val statusColor = when (status) {
+                    TaskStatus.DONE -> accent
+                    TaskStatus.ONGOING -> OngoingAmber
+                    TaskStatus.OPEN -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Surface(
                     shape = CircleShape,
-                    color = if (task.completed) accent.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant
+                    color = if (status == TaskStatus.OPEN) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        statusColor.copy(alpha = 0.16f)
+                    }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -981,17 +997,15 @@ private fun PortalTaskDetailReadOnlySheet(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Icon(
-                            imageVector = if (task.completed) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                            imageVector = status.portalIcon(),
                             contentDescription = null,
-                            tint = if (task.completed) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = statusColor,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = stringResource(
-                                if (task.completed) R.string.portal_status_completed else R.string.portal_status_open
-                            ),
+                            text = stringResource(status.portalLabelRes()),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = if (task.completed) accent else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = statusColor
                         )
                     }
                 }
@@ -1331,4 +1345,17 @@ private fun ClientPortalAddTaskSheet(
             }
         }
     }
+}
+
+
+private fun TaskStatus.portalIcon(): ImageVector = when (this) {
+    TaskStatus.OPEN -> Icons.Rounded.RadioButtonUnchecked
+    TaskStatus.ONGOING -> Icons.Rounded.Timelapse
+    TaskStatus.DONE -> Icons.Rounded.CheckCircle
+}
+
+private fun TaskStatus.portalLabelRes(): Int = when (this) {
+    TaskStatus.OPEN -> R.string.portal_status_open
+    TaskStatus.ONGOING -> R.string.portal_status_ongoing
+    TaskStatus.DONE -> R.string.portal_status_completed
 }

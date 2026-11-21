@@ -284,7 +284,7 @@ private fun AuthenticatedClientDesk(
     val onToggleClientCollapsed = remember(viewModel) { viewModel::toggleClientCollapsed }
     val onSetAllClientsCollapsed = remember(viewModel) { viewModel::setAllClientsCollapsed }
     val onSetTaskFilter = remember(viewModel) { viewModel::setTaskFilter }
-    val onToggleTaskDone = remember(viewModel) { viewModel::toggleTaskDone }
+    val onToggleTaskDone = remember(viewModel) { viewModel::cycleTaskStatus }
 
     val onOpenNewClient = remember {
         {
@@ -637,7 +637,7 @@ private fun AuthenticatedClientDesk(
                                         themeMode = themeMode,
                                         isDarkTheme = isDarkTheme,
                                         onThemeModeChange = onThemeModeChange,
-                                        onToggleTaskDone = viewModel::toggleTaskDone,
+                                        onToggleTaskDone = viewModel::cycleTaskStatus,
                                         onOpenAddTaskForClient = { clientId ->
                                             viewModel.selectClient(clientId)
                                             editingTask = null
@@ -742,7 +742,7 @@ private fun AuthenticatedClientDesk(
             existingTask = editingTask,
             isBusy = isBusy,
             onDismiss = { showTaskEditor = false },
-            onSubmit = { clientId, projectId, title, details, priority, dueLabel, completed ->
+            onSubmit = { clientId, projectId, title, details, priority, dueLabel, status ->
                 val target = editingTask
                 if (target == null) {
                     viewModel.createTask(
@@ -762,7 +762,7 @@ private fun AuthenticatedClientDesk(
                         details = details,
                         priority = priority,
                         dueLabel = dueLabel,
-                        completed = completed,
+                        status = status,
                         onSuccess = { showTaskEditor = false }
                     )
                 }
