@@ -414,7 +414,7 @@ fun TasksWorkspaceScreen(
 
         HorizontalPager(
             state = clientPagerState,
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 0,
             key = { page -> if (page == 0) "page_all_clients" else "page_client_${clients.getOrNull(page - 1)?.id ?: page}" },
             modifier = Modifier
                 .weight(1f)
@@ -674,7 +674,7 @@ private fun ClientProjectsSwipePage(
         // Inner HorizontalPager across projects (overscrolling boundaries glides into adjacent clients!)
         HorizontalPager(
             state = projectPagerState,
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 0,
             key = { idx -> effectiveProjects.getOrNull(idx)?.id ?: "proj_$idx" },
             modifier = Modifier
                 .weight(1f)
