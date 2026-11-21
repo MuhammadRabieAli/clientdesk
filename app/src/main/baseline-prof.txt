@@ -1,0 +1,6 @@
+# Hand-written Baseline Profile: ask ART to AOT-compile all of this app's own code at install
+# time, so the task rows, pagers and ribbon don't start out interpreted/JIT-compiled (which
+# shows up as jank on the first scrolls and swipes after each install or update).
+# Compose and other AndroidX libraries ship their own profiles; these get merged in automatically.
+HSPLcom/example/**;->**(**)**
+Lcom/example/**;

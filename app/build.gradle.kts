@@ -99,6 +99,8 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
+  // Installs the app's baseline profile (src/main/baseline-prof.txt) on sideloaded installs too
+  implementation(libs.androidx.profileinstaller)
   // implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)

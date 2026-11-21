@@ -32,6 +32,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -52,8 +53,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,10 +70,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -414,7 +416,7 @@ fun TasksWorkspaceScreen(
 
         HorizontalPager(
             state = clientPagerState,
-            beyondViewportPageCount = 0,
+            beyondViewportPageCount = 1,
             key = { page -> if (page == 0) "page_all_clients" else "page_client_${clients.getOrNull(page - 1)?.id ?: page}" },
             modifier = Modifier
                 .weight(1f)
@@ -435,6 +437,8 @@ fun TasksWorkspaceScreen(
                         scaleX = scale
                         scaleY = scale
                         alpha = 1f - (pageOffset * 0.18f)
+                        // ModulateAlpha avoids an offscreen buffer for the whole page on every swipe frame
+                        compositingStrategy = CompositingStrategy.ModulateAlpha
                     }
             ) {
                 if (page == 0) {
@@ -694,6 +698,8 @@ private fun ClientProjectsSwipePage(
                         scaleX = scale
                         scaleY = scale
                         alpha = 1f - (projOffset * 0.14f)
+                        // ModulateAlpha avoids an offscreen buffer for the whole page on every swipe frame
+                        compositingStrategy = CompositingStrategy.ModulateAlpha
                     }
             ) {
                 SingleProjectTasksList(
@@ -1866,30 +1872,49 @@ private fun QuickAddTaskBar(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier.fillMaxWidth()
     ) {
-        OutlinedTextField(
+        // Lightweight BasicTextField instead of Material OutlinedTextField: the Material field
+        // is expensive to compose, and one lives on every client/project page in the pagers.
+        val colorScheme = MaterialTheme.colorScheme
+        val typography = MaterialTheme.typography
+        var focused by remember { mutableStateOf(false) }
+        val placeholder = stringResource(R.string.workspace_quick_add_hint, bidiIsolate(targetName))
+        BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            textStyle = MaterialTheme.typography.bodyLarge.withBidi(value),
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.workspace_quick_add_hint, bidiIsolate(targetName)),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            },
+            textStyle = typography.bodyLarge.withBidi(value).copy(color = colorScheme.onSurface),
             singleLine = true,
-            shape = TaskCardShape,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
-                focusedBorderColor = accent,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            ),
+            cursorBrush = SolidColor(accent),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             modifier = Modifier
                 .weight(1f)
-                .testTag("quick_add_task_input")
+                .height(54.dp)
+                .onFocusChanged { focused = it.isFocused }
+                .testTag("quick_add_task_input"),
+            decorationBox = { innerTextField ->
+                Box(
+                    contentAlignment = Alignment.CenterStart,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colorScheme.surfaceContainerLowest, TaskCardShape)
+                        .border(
+                            width = if (focused) 2.dp else 1.dp,
+                            color = if (focused) accent else colorScheme.outline,
+                            shape = TaskCardShape
+                        )
+                        .padding(horizontal = 16.dp)
+                ) {
+                    if (value.isEmpty()) {
+                        BasicText(
+                            text = placeholder,
+                            style = typography.bodyLarge.copy(color = colorScheme.onSurfaceVariant),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    innerTextField()
+                }
+            }
         )
         FilledIconButton(
             onClick = onSubmit,
