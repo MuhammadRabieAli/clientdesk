@@ -347,9 +347,6 @@ fun ClientPortalScreen(
                                     .testTag("portal_project_pager")
                             ) { pageIdx ->
                                 val project = projects.getOrNull(pageIdx) ?: return@HorizontalPager
-                                val pageOffset = ((pagerState.currentPage - pageIdx) + pagerState.currentPageOffsetFraction)
-                                    .absoluteValue
-                                    .coerceIn(0f, 1f)
 
                                 val projectTasks = data.tasksByProject[project.id].orEmpty()
                                 val filteredTasks = remember(projectTasks, taskFilter) {
@@ -366,6 +363,9 @@ fun ClientPortalScreen(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .graphicsLayer {
+                                            val pageOffset = ((pagerState.currentPage - pageIdx) + pagerState.currentPageOffsetFraction)
+                                                .absoluteValue
+                                                .coerceIn(0f, 1f)
                                             val scale = 1f - (pageOffset * 0.025f)
                                             scaleX = scale
                                             scaleY = scale

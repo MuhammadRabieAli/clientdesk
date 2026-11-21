@@ -422,14 +422,15 @@ fun TasksWorkspaceScreen(
                 .widthIn(max = 760.dp)
                 .testTag("client_workspace_pager")
         ) { page ->
-            val pageOffset = ((clientPagerState.currentPage - page) + clientPagerState.currentPageOffsetFraction)
-                .absoluteValue
-                .coerceIn(0f, 1f)
-
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
+                        // Read pager offset in the draw phase only — reading it in composition
+                        // recomposes the whole page (and its LazyColumn) on every scroll frame.
+                        val pageOffset = ((clientPagerState.currentPage - page) + clientPagerState.currentPageOffsetFraction)
+                            .absoluteValue
+                            .coerceIn(0f, 1f)
                         val scale = 1f - (pageOffset * 0.03f)
                         scaleX = scale
                         scaleY = scale
@@ -681,14 +682,14 @@ private fun ClientProjectsSwipePage(
                 .testTag("project_pager_${client.id}")
         ) { projectIdx ->
             val project = effectiveProjects.getOrNull(projectIdx) ?: return@HorizontalPager
-            val projOffset = ((projectPagerState.currentPage - projectIdx) + projectPagerState.currentPageOffsetFraction)
-                .absoluteValue
-                .coerceIn(0f, 1f)
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
+                        val projOffset = ((projectPagerState.currentPage - projectIdx) + projectPagerState.currentPageOffsetFraction)
+                            .absoluteValue
+                            .coerceIn(0f, 1f)
                         val scale = 1f - (projOffset * 0.025f)
                         scaleX = scale
                         scaleY = scale

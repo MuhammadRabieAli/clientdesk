@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Firestore maps documents to these classes via reflection (toObject / toObjects).
+# Keep their fields, getters/setters and no-arg constructors intact under R8.
+-keep class com.example.data.** { *; }
+-keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
